@@ -1,8 +1,8 @@
-# MiMo Composer Token Status — Agent installation protocol
+# MiMo 缓存用量状态条 — Agent installation protocol
 
 ## Project
 
-**MiMo Composer Token Status** — agent-native local runtime extension for Xiaomi MiMo Desktop.
+**MiMo 缓存用量状态条** / **MiMo Composer Token Status** — agent-native local runtime extension for Xiaomi MiMo Desktop.
 
 Shows on the Composer footer:
 

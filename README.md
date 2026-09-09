@@ -1,6 +1,7 @@
-# MiMo Composer Token Status
+# MiMo 缓存用量状态条
 
-> **Agent-Native Runtime Extension for Xiaomi MiMo Desktop**  
+> **MiMo Composer Token Status**  
+> Agent-Native Runtime Extension for Xiaomi MiMo Desktop  
 > 非官方社区项目 · **Unofficial** · 与 Xiaomi 无关联（not affiliated with Xiaomi）
 
 面向 **Xiaomi MiMo Desktop** 的轻量级本地 Runtime Extension。
@@ -13,7 +14,7 @@
 
 **真机效果（Live）** — Composer 底栏与账户菜单「剩余用量」同源对照：
 
-![MiMo Composer Token Status live screenshot](docs/screenshots/composer-token-status-live.png)
+![MiMo 缓存用量状态条 live screenshot](docs/screenshots/composer-token-status-live.png)
 
 图中可见：
 
@@ -222,7 +223,7 @@ This project is **unofficial** and is **not affiliated with, endorsed by, or spo
 
 ### Overview
 
-**MiMo Composer Token Status** is an agent-native local runtime extension for **Xiaomi MiMo Desktop**. It shows two indicators in the Composer footer:
+**MiMo 缓存用量状态条** (English: **MiMo Composer Token Status**) is an agent-native local runtime extension for **Xiaomi MiMo Desktop**. It shows two indicators in the Composer footer:
 
 ```text
 Cache Hit Rate 96% · Usage Left 72%

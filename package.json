@@ -3,7 +3,7 @@
   "version": "2.2.0",
   "private": true,
   "type": "module",
-  "description": "MiMo Composer Token Status — agent-native runtime extension for Xiaomi MiMo Desktop: Cache Hit Rate + Token Plan Usage Remaining on the Composer footer",
+  "description": "MiMo 缓存用量状态条 (MiMo Composer Token Status) — agent-native runtime extension for Xiaomi MiMo Desktop: Cache Hit Rate + Token Plan Usage Remaining on the Composer footer",
   "keywords": [
     "mimo",
     "composer",
