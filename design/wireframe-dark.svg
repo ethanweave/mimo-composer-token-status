@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="200" viewBox="0 0 720 200" role="img" aria-label="Composer footer wireframe dark: cache and remaining centered">
+  <rect width="720" height="200" fill="#0b0b0c"/>
+  <!-- composer card -->
+  <rect x="48" y="28" width="624" height="128" rx="16" fill="#141416" stroke="#2a2a2e" stroke-width="1"/>
+  <!-- placeholder -->
+  <text x="72" y="58" fill="#6b6b70" font-family="ui-sans-serif, system-ui, 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="13">描述任务，输入/调用技能</text>
+  <!-- footer row controls -->
+  <circle cx="80" cy="128" r="11" fill="#1c1c1f" stroke="#2e2e33"/>
+  <text x="80" y="132" text-anchor="middle" fill="#a0a0a6" font-size="12" font-family="ui-sans-serif, system-ui, sans-serif">+</text>
+  <rect x="108" y="116" width="92" height="24" rx="12" fill="#1c1c1f" stroke="#2e2e33"/>
+  <text x="154" y="132" text-anchor="middle" fill="#c4c4c8" font-size="11" font-family="ui-sans-serif, system-ui, 'PingFang SC', sans-serif">完全访问</text>
+  <!-- CENTER STATUS -->
+  <line x1="300" y1="128" x2="420" y2="128" stroke="#1a1a1d"/>
+  <text x="360" y="132" text-anchor="middle" fill="#8e8e93" font-size="11" font-family="ui-sans-serif, system-ui, 'PingFang SC', 'Microsoft YaHei', sans-serif">缓存 96% · 剩余 38%</text>
+  <line x1="300" y1="128" x2="420" y2="128" stroke="none"/>
+  <!-- right cluster -->
+  <circle cx="520" cy="128" r="7" fill="none" stroke="#5a5a60" stroke-width="1.5"/>
+  <text x="552" y="132" fill="#c4c4c8" font-size="11" font-family="ui-sans-serif, system-ui, sans-serif">Smart</text>
+  <circle cx="600" cy="128" r="10" fill="#1c1c1f" stroke="#2e2e33"/>
+  <circle cx="640" cy="128" r="14" fill="#3a3a40"/>
+  <text x="640" y="132" text-anchor="middle" fill="#e8e8ea" font-size="12" font-family="ui-sans-serif, system-ui, sans-serif">↑</text>
+  <!-- baseline guide -->
+  <line x1="60" y1="158" x2="660" y2="158" stroke="#1f1f23" stroke-dasharray="2 4"/>
+  <text x="60" y="176" fill="#5c5c62" font-size="10" font-family="ui-sans-serif, system-ui, sans-serif">baseline · footer row · center</text>
+</svg>

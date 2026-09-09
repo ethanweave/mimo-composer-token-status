@@ -1,0 +1,31 @@
+{
+  "name": "composer-token-status",
+  "version": "2.2.0",
+  "private": true,
+  "type": "module",
+  "description": "MiMo Composer Token Status — agent-native runtime extension for Xiaomi MiMo Desktop: Cache Hit Rate + Token Plan Usage Remaining on the Composer footer",
+  "keywords": [
+    "mimo",
+    "composer",
+    "token-status",
+    "cache-hit-rate",
+    "token-plan",
+    "cdp",
+    "bootstrap"
+  ],
+  "scripts": {
+    "connect": "node inject/launcher.mjs",
+    "verify": "node scripts/dev-check.mjs",
+    "check": "node --check inject/runtime-inject.js && node --check inject/launcher.mjs && node --check inject/adapter.mjs && node --check inject/cdp-client.mjs && node --check bootstrap/bootstrap.mjs && node --check bootstrap/config.mjs && node --check bootstrap/mimo-discovery.mjs && node --check bootstrap/healthcheck.mjs && node --check adapters/format.mjs && node --check scripts/dev-check.mjs",
+    "bootstrap": "node bootstrap/bootstrap.mjs",
+    "bootstrap:watch": "node bootstrap/bootstrap.mjs --watch",
+    "bootstrap:status": "node bootstrap/bootstrap.mjs --status",
+    "e2e:debug": "node scripts/e2e/probe-debug.mjs",
+    "e2e:watch": "node scripts/e2e/watch-refresh.mjs",
+    "e2e:multi": "node scripts/e2e/e2e-multi.mjs"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "license": "MIT"
+}

@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 2,
+  "session": {
+    "id": "ses_demo",
+    "cacheHitRate": 0.25,
+    "planRemainingRatio": 0.86,
+    "planRemainingPercent": 86,
+    "planResetDate": "2026-09-16",
+    "planRemainingSource": "mimo:getUserUsage",
+    "contextRemainingRatio": null,
+    "cacheMetricScope": "conversation-cumulative",
+    "inputTokens": 138471,
+    "outputTokens": 367,
+    "cacheReadTokens": 45184,
+    "cacheWriteTokens": 0,
+    "model": "mimo-pro"
+  },
+  "_notes": {
+    "cacheHitRate": "cacheRead / (cacheRead + cacheWrite + input); input = fresh uncached",
+    "planRemainingRatio": "Token Plan remaining only — never Context Window",
+    "contextRemainingRatio": "debug only"
+  }
+}

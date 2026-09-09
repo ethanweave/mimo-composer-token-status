@@ -1,0 +1,145 @@
+#!/usr/bin/env node
+/**
+ * Phase 1 UI PoC: insert center token-status into MiMo Composer footer.
+ * Mock data only (96% / 38%). Requires app restart.
+ *
+ * Usage:
+ *   node inject/patch-asar.mjs --dry-run
+ *   node inject/patch-asar.mjs --apply
+ */
+import fs from "node:fs";
+import path from "node:path";
+import { createRequire } from "node:module";
+
+const require = createRequire(import.meta.url);
+
+const ASAR =
+  process.env.MIMO_ASAR ||
+  String.raw`%LOCALAPPDATA%\Programs\Xiaomi MiMo\resources\app.asar`;
+const INDEX_REL = "out/renderer/assets/index-DKekZm7Y.js";
+const HTML_REL = "out/renderer/index.html";
+
+const CENTER_SNIPPET = `d.jsx("div",{className:"cb-center","data-token-status":!0,children:"缓存 96% · 剩余 38%"}),`;
+const CENTER_MARKER = "data-token-status";
+const HOOK =
+  `d.jsxs("div",{className:"cb-left",children:[d.jsx(J9e,{variant:e}),d.jsx(n7e,{variant:e}),d.jsx($9e,{})]}),`;
+const HOOK_ALT =
+  `d.jsxs("div",{className:"cb-left",children:[d.jsx(J9e,{variant:e}),d.jsx(n7e,{variant:e}),d.jsx($9e,{})]}),d.jsxs("div",{className:"cb-right"`;
+
+const CSS = `
+<style id="cts-token-status-css">
+.cb-center{
+  flex:1 1 0;
+  min-width:0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:11px;
+  line-height:1.2;
+  color:var(--text-mut, var(--mut, #8e8e93));
+  white-space:nowrap;
+  user-select:none;
+  pointer-events:none;
+}
+[data-token-status]{ letter-spacing:0.01em; }
+</style>
+`;
+
+function loadAsar() {
+  const tools = path.join(
+    process.env.TEMP || "",
+    "asar-tools",
+    "node_modules",
+    "@electron",
+    "asar"
+  );
+  if (fs.existsSync(tools)) {
+    return require(tools);
+  }
+  return require("@electron/asar");
+}
+
+function readFileFromAsar(asar, rel) {
+  const buf = asar.extractFile(ASAR, rel);
+  return Buffer.isBuffer(buf) ? buf : Buffer.from(buf);
+}
+
+function main() {
+  const apply = process.argv.includes("--apply");
+  const dry = !apply;
+  const asar = loadAsar();
+
+  const list = asar.listPackage(ASAR);
+  const hasIndex = list.some((p) => p.replace(/\\/g, "/").includes(INDEX_REL));
+  if (!hasIndex) {
+    console.error("Index chunk not found:", INDEX_REL);
+    process.exit(1);
+  }
+
+  let js = readFileFromAsar(asar, INDEX_REL).toString("utf8");
+  let html = readFileFromAsar(asar, HTML_REL).toString("utf8");
+
+  if (js.includes(CENTER_MARKER)) {
+    console.log("Already patched (data-token-status present). Nothing to do.");
+    return;
+  }
+
+  if (!js.includes(HOOK)) {
+    // Try looser match: insert before cb-right after cb-left closing
+    const idx = js.indexOf(`className:"cb-right"`);
+    if (idx < 0) {
+      console.error("Could not locate composer-bar cb-left/cb-right anchor.");
+      process.exit(2);
+    }
+    js = js.slice(0, idx) + CENTER_SNIPPET + js.slice(idx);
+    console.log("Patched via cb-right anchor.");
+  } else {
+    js = js.replace(HOOK, HOOK + CENTER_SNIPPET);
+    console.log("Patched via cb-left hook.");
+  }
+
+  if (!html.includes("cts-token-status-css")) {
+    html = html.replace("</head>", `${CSS}</head>`);
+    console.log("Injected CSS into index.html.");
+  }
+
+  if (dry) {
+    console.log("DRY-RUN: would write back", INDEX_REL, "and", HTML_REL);
+    console.log("Snippet:", CENTER_SNIPPET);
+    return;
+  }
+
+  // Backup original asar once
+  const backup = ASAR + ".bak-cts";
+  if (!fs.existsSync(backup)) {
+    fs.copyFileSync(ASAR, backup);
+    console.log("Backed up asar →", backup);
+  }
+
+  // Rebuild asar: extract all, replace two files, pack — heavy but reliable.
+  // Instead: use asar's raw file rewrite via extractFile + createPackage of subset is wrong.
+  // Use @electron/asar Filesystem API if available, else error with guidance.
+  console.log("NOTE: full asar rewrite is intentionally conservative.");
+  console.log("Write patched files to a staging dir, then pack with asar pack.");
+  const stage = path.join(process.env.TEMP || ".", "cts-asar-stage");
+  fs.rmSync(stage, { recursive: true, force: true });
+  // Extract only what we need is incomplete for pack. Document manual step:
+  const outJs = path.join(process.env.TEMP, "cts-index-patched.js");
+  const outHtml = path.join(process.env.TEMP, "cts-index-patched.html");
+  fs.writeFileSync(outJs, js, "utf8");
+  fs.writeFileSync(outHtml, html, "utf8");
+  console.log("Patched JS →", outJs);
+  console.log("Patched HTML →", outHtml);
+  console.log(`
+Manual apply (after full extract of asar to a folder F):
+  1. copy patched JS to F/${INDEX_REL}
+  2. copy patched HTML to F/${HTML_REL}
+  3. asar pack F "${ASAR}.new"
+  4. replace app.asar (close MiMo first)
+`);
+}
+
+main().catch((e) => {
+  console.error(e);
+  process.exit(1);
+});

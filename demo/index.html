@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Composer Token Status — 本机 Demo</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #0b0b0c;
+      --card: #141416;
+      --line: #2a2a2e;
+      --chip: #1c1c1f;
+      --text: #e8e8ea;
+      --muted: #8e8e93;
+      --dim: #6b6b70;
+      --send: #3a3a40;
+      --disclaimer: #5c5c62;
+      --ring-track: #2a2a2e;
+      --ring-fill: #8e8e93;
+    }
+    [data-theme="light"] {
+      color-scheme: light;
+      --bg: #f4f4f5;
+      --card: #ffffff;
+      --line: #e4e4e7;
+      --chip: #f4f4f5;
+      --text: #18181b;
+      --muted: #71717a;
+      --dim: #9b9ba1;
+      --send: #27272a;
+      --disclaimer: #a1a1aa;
+      --ring-track: #e4e4e7;
+      --ring-fill: #71717a;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--text);
+      font-family: ui-sans-serif, system-ui, -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 32px 16px 48px;
+      gap: 16px;
+    }
+    h1 { font-size: 15px; font-weight: 500; margin: 0; }
+    p.hint { margin: 0; color: var(--dim); font-size: 12px; max-width: 560px; text-align: center; line-height: 1.5; }
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: center;
+      align-items: center;
+    }
+    button, select {
+      background: var(--chip);
+      color: var(--text);
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 6px 14px;
+      font-size: 12px;
+      cursor: pointer;
+    }
+    button:focus-visible, select:focus-visible {
+      outline: 2px solid var(--ring-fill);
+      outline-offset: 2px;
+    }
+    .composer {
+      width: min(720px, 100%);
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 16px 16px 12px;
+    }
+    .placeholder {
+      color: var(--dim);
+      font-size: 13px;
+      min-height: 40px;
+      margin-bottom: 20px;
+    }
+    .footer {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      align-items: center;
+      gap: 8px;
+      min-height: 36px;
+    }
+    .left, .right {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .left { justify-content: flex-start; }
+    .right { justify-content: flex-end; }
+    .icon-btn {
+      width: 28px;
+      height: 28px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: var(--chip);
+      color: var(--muted);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      padding: 0;
+    }
+    .chip {
+      height: 28px;
+      padding: 0 12px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: var(--chip);
+      color: var(--text);
+      font-size: 11px;
+      display: inline-flex;
+      align-items: center;
+    }
+    .center-status {
+      justify-self: center;
+      font-size: 11px;
+      line-height: 1.2;
+      color: var(--muted);
+      white-space: nowrap;
+      letter-spacing: 0.01em;
+      user-select: none;
+    }
+    .ring {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: conic-gradient(var(--ring-fill) var(--p, 0%), var(--ring-track) 0);
+      position: relative;
+      flex-shrink: 0;
+    }
+    .ring::after {
+      content: "";
+      position: absolute;
+      inset: 2.5px;
+      border-radius: 50%;
+      background: var(--card);
+    }
+    .send {
+      width: 32px;
+      height: 32px;
+      border-radius: 999px;
+      background: var(--send);
+      color: #fafafa;
+      border: none;
+      font-size: 14px;
+    }
+    [data-theme="light"] .send { color: #fafafa; }
+    .disclaimer {
+      margin-top: 10px;
+      text-align: center;
+      font-size: 11px;
+      color: var(--disclaimer);
+    }
+    .meta {
+      width: min(720px, 100%);
+      font-size: 11px;
+      color: var(--dim);
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px 16px;
+      justify-content: space-between;
+    }
+    code { font-family: ui-monospace, "Cascadia Code", Consolas, monospace; font-size: 11px; }
+    @media (prefers-reduced-motion: reduce) {
+      .center-status { transition: none !important; }
+    }
+    .center-status { transition: opacity 160ms ease; }
+  </style>
+</head>
+<body>
+  <h1>Composer Token Status · 本机 Demo</h1>
+  <p class="hint">
+    按 DECISIONS.md：底栏中央只读双百分比；剩余用量 = Token Plan，与上下文环独立。
+    此页仅模拟 MiMo Composer 底栏，用于开源前目视验收，非真实计费源。
+  </p>
+
+  <div class="toolbar">
+    <button type="button" id="themeBtn">切换深/浅色</button>
+    <label>
+      <select id="preset" aria-label="快照预设">
+        <option value="demo">demo · 96% / 72%</option>
+        <option value="empty">空态 · —</option>
+        <option value="cacheOnly">仅缓存</option>
+        <option value="low">低剩余 · 12%</option>
+        <option value="highCache">高缓存 · 99%</option>
+      </select>
+    </label>
+    <span id="a11yLabel" class="meta" style="width:auto;display:inline;color:var(--dim)"></span>
+  </div>
+
+  <div class="composer" id="composer">
+    <div class="placeholder">描述任务，输入/调用技能</div>
+    <div class="footer">
+      <div class="left">
+        <button type="button" class="icon-btn" aria-label="添加">+</button>
+        <span class="chip">完全访问</span>
+      </div>
+      <div class="center-status" id="status" role="status">缓存 96% · 剩余用量 72%</div>
+      <div class="right">
+        <span class="ring" id="ring" title="上下文环示意（非 Token Plan）" aria-hidden="true"></span>
+        <span class="chip" style="border-color:transparent;background:transparent;padding:0 4px">Smart</span>
+        <button type="button" class="icon-btn" aria-label="语音">🎤</button>
+        <button type="button" class="send" aria-label="发送">↑</button>
+      </div>
+    </div>
+    <div class="disclaimer">内容由 AI 生成，请注意核实</div>
+  </div>
+
+  <div class="meta">
+    <span>对齐：footer 三栏网格 · 中列居中 · 与控件同基线</span>
+    <span id="snapEcho"></span>
+  </div>
+
+  <script type="module">
+    // Inline mirror of adapters/format.mjs (demo standalone)
+    const clamp01 = (n) => (typeof n === "number" && !Number.isNaN(n) ? Math.min(1, Math.max(0, n)) : null);
+    const toPercent = (r) => { const x = clamp01(r); return x === null ? null : Math.round(x * 100); };
+    function formatStatus(session, locale = "zh-CN") {
+      const cache = toPercent(session?.cacheHitRate);
+      const left = toPercent(session?.planRemainingRatio ?? session?.remainingRatio);
+      if (cache === null && left === null) return "—";
+      if (locale.startsWith("zh")) {
+        if (cache !== null && left !== null) return `缓存 ${cache}% · 剩余用量 ${left}%`;
+        if (cache !== null) return `缓存 ${cache}%`;
+        return `剩余用量 ${left}%`;
+      }
+      if (cache !== null && left !== null) return `Cache ${cache}% · Left ${left}%`;
+      if (cache !== null) return `Cache ${cache}%`;
+      return `Left ${left}%`;
+    }
+    function formatA11y(session, locale = "zh-CN") {
+      const cache = toPercent(session?.cacheHitRate);
+      const left = toPercent(session?.planRemainingRatio ?? session?.remainingRatio);
+      if (cache === null && left === null) return "暂无用量数据";
+      if (locale.startsWith("zh")) {
+        if (cache !== null && left !== null) return `缓存命中 ${cache}%，剩余用量 ${left}%（Token Plan）`;
+        return cache !== null ? `缓存命中 ${cache}%` : `剩余用量 ${left}%（Token Plan）`;
+      }
+      if (cache !== null && left !== null) return `Cache hit ${cache}%, ${left}% remaining`;
+      return cache !== null ? `Cache hit ${cache}%` : `${left}% remaining`;
+    }
+
+    const presets = {
+      demo: { cacheHitRate: 0.962, planRemainingRatio: 0.72, contextRemainingRatio: 0.38, inputTokens: 19400, outputTokens: 2200, cacheReadTokens: 443800 },
+      empty: {},
+      cacheOnly: { cacheHitRate: 0.91, planRemainingRatio: undefined },
+      low: { cacheHitRate: 0.72, planRemainingRatio: 0.12, contextRemainingRatio: 0.8 },
+      highCache: { cacheHitRate: 0.994, planRemainingRatio: 0.61, contextRemainingRatio: 0.2 },
+    };
+
+    const statusEl = document.getElementById("status");
+    const ringEl = document.getElementById("ring");
+    const a11yEl = document.getElementById("a11yLabel");
+    const echoEl = document.getElementById("snapEcho");
+    const presetEl = document.getElementById("preset");
+    const themeBtn = document.getElementById("themeBtn");
+
+    function apply(key) {
+      const session = presets[key] || presets.demo;
+      const text = formatStatus(session, "zh-CN");
+      statusEl.style.opacity = "0.4";
+      requestAnimationFrame(() => {
+        statusEl.textContent = text;
+        statusEl.setAttribute("aria-label", formatA11y(session, "zh-CN"));
+        statusEl.style.opacity = "1";
+      });
+      a11yEl.textContent = formatA11y(session, "zh-CN");
+      const left = toPercent(session.contextRemainingRatio);
+      const p = left === null ? 0 : 100 - left;
+      ringEl.style.setProperty("--p", `${p}%`);
+      echoEl.textContent = `snapshot · planRemainingRatio=${session.planRemainingRatio ?? "—"} · contextRemainingRatio=${session.contextRemainingRatio ?? "—"}`;
+    }
+
+    presetEl.addEventListener("change", () => apply(presetEl.value));
+    themeBtn.addEventListener("click", () => {
+      const cur = document.documentElement.getAttribute("data-theme") || "dark";
+      document.documentElement.setAttribute("data-theme", cur === "dark" ? "light" : "dark");
+    });
+    document.documentElement.setAttribute("data-theme", "dark");
+    apply("demo");
+  </script>
+</body>
+</html>

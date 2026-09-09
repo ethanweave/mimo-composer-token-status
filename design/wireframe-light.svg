@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="200" viewBox="0 0 720 200" role="img" aria-label="Composer footer wireframe light: cache and remaining centered">
+  <rect width="720" height="200" fill="#f4f4f5"/>
+  <rect x="48" y="28" width="624" height="128" rx="16" fill="#ffffff" stroke="#e4e4e7" stroke-width="1"/>
+  <text x="72" y="58" fill="#9b9ba1" font-family="ui-sans-serif, system-ui, 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="13">描述任务，输入/调用技能</text>
+  <circle cx="80" cy="128" r="11" fill="#f4f4f5" stroke="#e4e4e7"/>
+  <text x="80" y="132" text-anchor="middle" fill="#52525b" font-size="12" font-family="ui-sans-serif, system-ui, sans-serif">+</text>
+  <rect x="108" y="116" width="92" height="24" rx="12" fill="#f4f4f5" stroke="#e4e4e7"/>
+  <text x="154" y="132" text-anchor="middle" fill="#3f3f46" font-size="11" font-family="ui-sans-serif, system-ui, 'PingFang SC', sans-serif">完全访问</text>
+  <text x="360" y="132" text-anchor="middle" fill="#71717a" font-size="11" font-family="ui-sans-serif, system-ui, 'PingFang SC', 'Microsoft YaHei', sans-serif">缓存 96% · 剩余 38%</text>
+  <circle cx="520" cy="128" r="7" fill="none" stroke="#a1a1aa" stroke-width="1.5"/>
+  <text x="552" y="132" fill="#3f3f46" font-size="11" font-family="ui-sans-serif, system-ui, sans-serif">Smart</text>
+  <circle cx="600" cy="128" r="10" fill="#f4f4f5" stroke="#e4e4e7"/>
+  <circle cx="640" cy="128" r="14" fill="#27272a"/>
+  <text x="640" y="132" text-anchor="middle" fill="#fafafa" font-size="12" font-family="ui-sans-serif, system-ui, sans-serif">↑</text>
+  <line x1="60" y1="158" x2="660" y2="158" stroke="#e4e4e7" stroke-dasharray="2 4"/>
+  <text x="60" y="176" fill="#a1a1aa" font-size="10" font-family="ui-sans-serif, system-ui, sans-serif">baseline · footer row · center</text>
+</svg>
