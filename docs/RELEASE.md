@@ -2,43 +2,60 @@
 
 Agent-native runtime extension for Xiaomi MiMo Desktop.
 
-## Highlights
+## 本版本
 
-- Composer **Cache Hit Rate**
-- **Token Plan Usage Remaining** (account menu source)
+v2.2.0 是本项目首个 GitHub-ready 正式版本。
+
+## 核心功能
+
+- Composer Footer 显示 **缓存命中率**（Cache Hit Rate）
+- Composer Footer 显示 **Token Plan 剩余用量**（Usage Left）
+- Cache Hit Rate 使用 MiMo 会话 Usage State（`Pje` → `usageByConvo`）
+- Plan Remaining 使用 MiMo Native Usage API（`window.mimo.getUserUsage()`）
 - Event-driven refresh
-- Agent-first installation
-- Automatic **Xiaomi MiMo** shortcut bootstrap (same name/icon)
-- Rollback / repair / verify
-- Zero additional LLM requests
-- Zero external network requests in production
-- No `app.asar` modification
+- Agent-native deployment
+- 用户级安装 / Repair / Uninstall / Rollback / Healthcheck
 
-## Compatibility
+## 验证
 
-- Windows 10 / 11  
-- Xiaomi MiMo Desktop  
-- Node.js ≥ 18  
+- `npm run check`：PASS
+- `npm run verify`：25/25 PASS
+- Additional LLM Requests：0
+- External Production Network Requests：0
+- Timers：0
+- MutationObservers：0
+- app.asar：未修改
+- MiMo executable：未修改
+- Runtime：冻结
 
-## Important limitation
+## 兼容性
 
-The supported zero-friction path is the installed **desktop/start-menu Xiaomi MiMo shortcut** (wrapped by the installer).
+- Windows：支持
+- MiMo Desktop：支持
+- macOS：暂不支持
+- Linux：暂不支持
 
-Launching the **raw** `Xiaomi MiMo.exe` directly without `--remote-debugging-port` remains **unsupported** without modifying the host application.
+## 已知限制
 
-## Security
+- MiMo 内部结构具有版本敏感性
+- 当前版本依赖安装后的 **Xiaomi MiMo** 快捷方式
+- 原始 `Xiaomi MiMo.exe` 直接启动不支持 CDP 注入
+- 冷启动 unattended chain 尚未进行完整无人值守验证
 
-- No telemetry  
-- No analytics  
-- No prompt upload  
-- No token upload  
-- No additional LLM inference requests  
-- Localhost CDP only  
+## 安全
 
-## Install
+- 无 Telemetry / Analytics / 云端服务
+- 无额外 LLM 请求
+- 不修改 `app.asar` / MiMo executable
 
-See [INSTALLATION.md](INSTALLATION.md) and repository [AGENTS.md](../AGENTS.md).
+## English Summary
 
-## License
+MiMo Composer Token Status v2.2.0 is the first public, GitHub-ready release of this Agent-Native Runtime Extension.
 
-MIT. Unofficial; not affiliated with Xiaomi.
+It adds **Cache Hit Rate** and **Token Plan Remaining Usage** to the MiMo Composer footer using local runtime integration.
+
+No app.asar patching. No additional LLM requests. No telemetry. No cloud service.
+
+---
+
+**Unofficial** — not affiliated with Xiaomi. MIT License.
