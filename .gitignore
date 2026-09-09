@@ -10,7 +10,8 @@ Thumbs.db
 *.local
 .env
 .env.*
-screenshots/
+/screenshots/
+
 tmp/
 temp/
 coverage/

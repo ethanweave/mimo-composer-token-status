@@ -11,6 +11,15 @@
 缓存命中率 96% · 剩余用量 72%
 ```
 
+**真机效果（Live）** — Composer 底栏与账户菜单「剩余用量」同源对照：
+
+![MiMo Composer Token Status live screenshot](docs/screenshots/composer-token-status-live.png)
+
+图中可见：
+
+- Composer Footer：`缓存命中率 100% · 剩余用量 78%`
+- 账户菜单「剩余用量」：`1 周 · 78% · 2026-09-16`（同一 Token Plan 数据源）
+
 复用 MiMo 已有的本地 Usage State 与 Native Usage API，通过 **本机 CDP** 完成 Runtime Injection。
 
 - 不修改 `app.asar`
@@ -218,6 +227,10 @@ This project is **unofficial** and is **not affiliated with, endorsed by, or spo
 ```text
 Cache Hit Rate 96% · Usage Left 72%
 ```
+
+Live screenshot (same session): Composer footer matches the account menu **剩余用量**.
+
+![Live screenshot](docs/screenshots/composer-token-status-live.png)
 
 It reuses MiMo’s existing local usage state and native account usage API via **localhost CDP** injection. It does **not** modify `app.asar` or the MiMo executable, makes **no extra LLM requests**, and uses **no cloud or telemetry**.
 
