@@ -61,18 +61,19 @@ Write-Step $true "Files copied to install root"
 $bootstrap = Join-Path $installRoot 'bootstrap\bootstrap.mjs'
 if (-not (Test-Path $bootstrap)) { Write-Step $false "bootstrap.mjs missing"; exit 4 }
 
-# --- wrapper launch script (invisible-ish; uses start on real exe) ---
-$wrapper = Join-Path $installRoot 'launch-mimo.cmd'
+# --- silent VBS launcher (no cmd/PowerShell window) ---
+$wrapper = Join-Path $installRoot 'launch-mimo.vbs'
 $wrapperBody = @"
-@echo off
-setlocal
-set "CTS_NODE=$node"
-set "CTS_BOOT=$bootstrap"
-set "CTS_EXE=$mimoExe"
-set "CTS_PORT=9222"
-REM If MiMo already running with CDP, just inject. Else start with CDP.
-powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0ensure-mimo-cdp.ps1"
-exit /b %ERRORLEVEL%
+Set sh = CreateObject("WScript.Shell")
+Set fso = CreateObject("Scripting.FileSystemObject")
+local = sh.ExpandEnvironmentStrings("%LOCALAPPDATA%")
+exe = local & "\Programs\Xiaomi MiMo\Xiaomi MiMo.exe"
+node = "$node"
+boot = local & "\composer-token-status\bootstrap\bootstrap.mjs"
+' Start MiMo with CDP if not already running; Electron single-instance focuses existing.
+sh.Run "cmd /c start """" """ & exe & """ --remote-debugging-port=9222", 0, False
+WScript.Sleep 4000
+sh.Run """" & node & """ """ & boot & """ --launch", 0, False
 "@
 Set-Content -Path $wrapper -Value $wrapperBody -Encoding ASCII
 
@@ -161,8 +162,8 @@ function Backup-Lnk($lnkPath, $rollback) {
 function Write-WrappedLnk($lnkPath, $desc) {
   $w = New-Object -ComObject WScript.Shell
   $s = $w.CreateShortcut($lnkPath)
-  $s.TargetPath = "cmd.exe"
-  $s.Arguments = "/c `"$wrapper`""
+  $s.TargetPath = "wscript.exe"
+  $s.Arguments = "`"$wrapper`""
   $s.WorkingDirectory = $installRoot
   $s.IconLocation = "$mimoExe,0"
   $s.Description = $desc
@@ -197,7 +198,8 @@ foreach ($lnk in $candidateLnks) {
   # Skip our own already-wrapped
   try {
     $s = Get-Lnk $lnk
-    if ($s.TargetPath -eq 'cmd.exe' -and $s.Arguments -like "*launch-mimo.cmd*") {
+    if (($s.TargetPath -eq 'wscript.exe' -and $s.Arguments -like '*launch-mimo.vbs*') -or
+        ($s.TargetPath -eq 'cmd.exe' -and $s.Arguments -like '*launch-mimo.cmd*')) {
       $rollback.replaced += $lnk
       Write-Step $true "Already wrapped: $lnk"
       continue

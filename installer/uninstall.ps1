@@ -49,7 +49,7 @@ if (Test-Path $rollbackPath) {
     if (Test-Path $productStart) {
       try {
         $s = $w.CreateShortcut($productStart)
-        if ($s.Arguments -like '*launch-mimo.cmd*' -or $s.TargetPath -eq 'cmd.exe') {
+        if ($s.Arguments -like '*launch-mimo.cmd*' -or $s.Arguments -like '*launch-mimo.vbs*' -or $s.TargetPath -eq 'cmd.exe' -or $s.TargetPath -eq 'wscript.exe') {
           Remove-Item $productStart -Force -ErrorAction SilentlyContinue
           if (-not (Get-ChildItem $productFolder -ErrorAction SilentlyContinue)) {
             Remove-Item $productFolder -Recurse -Force -ErrorAction SilentlyContinue
@@ -74,7 +74,8 @@ try {
 # Legacy 2.1 shortcuts
 $legacy = @(
   (Join-Path ([Environment]::GetFolderPath('Desktop')) 'MiMo (Token Status).lnk'),
-  (Join-Path $env:APPDATA 'Microsoft\Windows\Start Menu\Programs\Composer Token Status')
+  (Join-Path $env:APPDATA 'Microsoft\Windows\Start Menu\Programs\Composer Token Status'),
+  (Join-Path $env:APPDATA 'Microsoft\Windows\Start Menu\Programs\Xiaomi MiMo')
 )
 foreach ($l in $legacy) {
   if (Test-Path $l) { Remove-Item $l -Recurse -Force -ErrorAction SilentlyContinue }
