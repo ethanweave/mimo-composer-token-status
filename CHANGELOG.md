@@ -1,5 +1,35 @@
 # Changelog
 
+## [2.3.1] — 2026-09-13
+
+Startup lifecycle refactor + Cache Hit Rate structure-based Fiber lookup.
+
+### Changed
+
+- **No login autostart**: removed HKCU Run `ComposerTokenStatus`; Windows Login starts nothing
+- **One-shot bootstrap**: `bootstrap.mjs` no longer launches MiMo, watches, or keeps a daemon
+  - WAIT FOR CDP → ATTACH → INJECT → EXIT
+  - Bounded CDP wait: 20s
+  - Bounded `no-composer` retry: 500ms interval, 15s max (then exit 1)
+- **Wrapper is sole launcher**: `launch-mimo.vbs` starts MiMo with `--remote-debugging-port=9222` only if not already running, then runs one-shot bootstrap
+- Desktop / Start Menu "Xiaomi MiMo" shortcuts target the wrapper (same name + icon)
+- `installer/install.ps1`: no longer registers login persistence; clears legacy Run entry
+- **runtime-inject.js REV 21**: locate conversation usage by Fiber **structure**, not minified component name (`Pje`/`iIe`)
+  - Accepts direct usage-like `hook.memoizedState` objects (current MiMo)
+  - Still accepts selector-function hooks (legacy Pje-style)
+  - Same-fiber `ses_` id boosts score; `Pje` name is only a soft hint
+  - Cache formula unchanged: `cacheRead / (cacheRead + cacheWrite + input)`
+
+### Fixed
+
+- Token Status disappeared after cold start when CDP opened before Composer mounted (one-shot inject failed once and exited)
+- Cache Hit Rate always null after MiMo renamed the usage component (`Pje` → minified)
+
+### Removed
+
+- `bootstrap --watch` / `--launch` / `watchLoop` / spawn-MiMo-from-CTS
+- Login-time resident node process
+
 ## [2.2.0] — 2026-09-09
 
 **MiMo Composer Token Status v2.2.0**  

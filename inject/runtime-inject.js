@@ -39,7 +39,7 @@
   var STYLE_ID = "cts-token-status-css";
   var DATA_CTS = "token-status";
   var SCHEMA = 1;
-  var REV = 20;
+  var REV = 21;
   var alive = true;
   var last = null;
   var lastError = null;
@@ -84,27 +84,19 @@
     return null;
   }
 
-  function findPjeFiber() {
-    var nodes = document.querySelectorAll("[data-ctx-hud], .ctx-hud, .composer-bar");
-    for (var n = 0; n < nodes.length && n < 12; n++) {
-      var f = fiberKey(nodes[n]);
-      var hops = 0;
-      while (f && hops++ < 40) {
-        if (typeof f.type === "function" && f.type.name === "Pje") return f;
-        f = f.return;
-      }
-    }
-    return null;
-  }
-
   function isUsageLike(v) {
     return (
       v &&
       typeof v === "object" &&
-      typeof v.input === "number" &&
+      !Array.isArray(v) &&
       typeof v.cacheRead === "number" &&
-      typeof v.output === "number"
+      typeof v.input === "number" &&
+      (typeof v.output === "number" || typeof v.cacheWrite === "number")
     );
+  }
+
+  function isSessionId(v) {
+    return typeof v === "string" && v.indexOf("ses_") === 0;
   }
 
   function trySelector(fn) {
@@ -116,17 +108,46 @@
     }
   }
 
-  /** Bounded Pje hook pass only. */
-  function readUsageFromPje() {
-    var pje = findPjeFiber();
-    if (!pje) return { usage: null, convoId: null, found: false };
+  /**
+   * Score a usage-like object: prefer real token buckets over random {input:…} shapes.
+   * cacheRead/cacheWrite are the strongest signal; extra known fields add confidence.
+   */
+  function usageScore(u) {
+    if (!isUsageLike(u)) return 0;
+    var s = 10;
+    if (typeof u.cacheWrite === "number") s += 8;
+    if (typeof u.output === "number") s += 4;
+    if (typeof u.reasoning === "number") s += 2;
+    if (u.modelId != null) s += 3;
+    if (u.providerId != null) s += 3;
+    // Prefer larger cumulative context (current conversation over stale)
+    s += Math.min(20, totalOf(u) / 10000);
+    return s;
+  }
+
+  /**
+   * Scan one function-component fiber's hook list.
+   * Accepts BOTH:
+   *   - hook.memoizedState as a direct usage-like object (current MiMo iIe-style)
+   *   - selector functions that return usage / ses_ (legacy Pje-style)
+   */
+  function scanFiberHooks(fiber) {
     var usage = null;
+    var usageScoreBest = 0;
     var convoId = null;
-    var h = pje.memoizedState;
+    var h = fiber && fiber.memoizedState;
     var i = 0;
     var calls = 0;
-    while (h && i++ < 32) {
+    while (h && i++ < 48) {
       var ms = h.memoizedState;
+      if (isSessionId(ms) && !convoId) convoId = ms;
+      if (isUsageLike(ms)) {
+        var sc = usageScore(ms);
+        if (sc > usageScoreBest) {
+          usageScoreBest = sc;
+          usage = ms;
+        }
+      }
       var fns = [];
       if (typeof ms === "function") fns.push(ms);
       if (ms && typeof ms === "object") {
@@ -136,17 +157,59 @@
           fns.push(ms.memoizedState[0]);
         }
       }
-      for (var c = 0; c < fns.length && calls < 40; c++) {
+      for (var c = 0; c < fns.length && calls < 48; c++) {
         calls++;
         var v = trySelector(fns[c]);
-        if (typeof v === "string" && v.indexOf("ses_") === 0 && !convoId) convoId = v;
+        if (isSessionId(v) && !convoId) convoId = v;
         if (isUsageLike(v)) {
-          if (!usage || totalOf(v) >= totalOf(usage)) usage = v;
+          var sc2 = usageScore(v);
+          if (sc2 > usageScoreBest) {
+            usageScoreBest = sc2;
+            usage = v;
+          }
         }
       }
       h = h.next;
     }
-    return { usage: usage, convoId: convoId, found: !!usage };
+    return { usage: usage, convoId: convoId, score: usageScoreBest };
+  }
+
+  /**
+   * Locate usage by STRUCTURE near composer anchors — not by minified component name.
+   * Walks each anchor's ancestor chain (bounded) and scores hook results.
+   * Same-fiber ses_ id is a strong boost (current conversation usage).
+   */
+  function findUsageFiber() {
+    var nodes = document.querySelectorAll("[data-ctx-hud], .ctx-hud, .composer-bar");
+    var best = { fiber: null, usage: null, convoId: null, score: 0 };
+    for (var n = 0; n < nodes.length && n < 12; n++) {
+      var f = fiberKey(nodes[n]);
+      var hops = 0;
+      while (f && hops++ < 40) {
+        if (typeof f.type === "function") {
+          var r = scanFiberHooks(f);
+          if (r.usage) {
+            var score = r.score;
+            // Prefer fibers that also carry a session id (same component as usage)
+            if (r.convoId) score += 15;
+            // Soft historical name hint only — never required
+            if (f.type.name === "Pje") score += 5;
+            if (score > best.score) {
+              best = { fiber: f, usage: r.usage, convoId: r.convoId, score: score };
+            }
+          }
+        }
+        f = f.return;
+      }
+    }
+    return best;
+  }
+
+  /** Structure-based usage read (replaces name-locked Pje lookup). */
+  function readUsageFromPje() {
+    var hit = findUsageFiber();
+    if (!hit || !hit.usage) return { usage: null, convoId: null, found: false };
+    return { usage: hit.usage, convoId: hit.convoId || null, found: true };
   }
 
   function readPlanRemaining() {

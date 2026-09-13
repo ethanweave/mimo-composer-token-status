@@ -1,14 +1,14 @@
 #Requires -Version 5.1
 <#
-  Composer Token Status v2.2.0 — install.ps1
-  Zero-friction: rewrite existing "Xiaomi MiMo" user shortcuts to launch
-  real MiMo.exe with CDP + bootstrap inject, preserving name + icon.
+  Composer Token Status v2.3.0 — install.ps1
+  Rewrite existing "Xiaomi MiMo" user shortcuts to launch the wrapper
+  (MiMo + CDP, then one-shot CTS bootstrap). No login autostart.
   Does NOT modify MiMo.exe or app.asar.
 #>
 $ErrorActionPreference = 'Stop'
 $ProductName = 'Composer Token Status'
 $RunName = 'ComposerTokenStatus'
-$Version = '2.2.0'
+$Version = '2.3.0'
 
 function Write-Step($ok, $msg) {
   if ($ok) { Write-Host "  [OK] $msg" -ForegroundColor Green }
@@ -64,16 +64,52 @@ if (-not (Test-Path $bootstrap)) { Write-Step $false "bootstrap.mjs missing"; ex
 # --- silent VBS launcher (no cmd/PowerShell window) ---
 $wrapper = Join-Path $installRoot 'launch-mimo.vbs'
 $wrapperBody = @"
-Set sh = CreateObject("WScript.Shell")
+' MiMo wrapper — sole process orchestration entry for Token Status.
+' 1) If MiMo is not running, start it with --remote-debugging-port=9222.
+' 2) Always run one-shot CTS bootstrap (wait → attach → inject → exit).
+' CTS never launches MiMo; this wrapper is the only launcher.
+Option Explicit
+
+Dim shell, fso, mimoExe, bootstrapScript, nodeExe, mimoArgs, debugPort
+Dim wmi, procs, p, alreadyRunning
+
+Set shell = CreateObject("WScript.Shell")
 Set fso = CreateObject("Scripting.FileSystemObject")
-local = sh.ExpandEnvironmentStrings("%LOCALAPPDATA%")
-exe = local & "\Programs\Xiaomi MiMo\Xiaomi MiMo.exe"
-node = "$node"
-boot = local & "\composer-token-status\bootstrap\bootstrap.mjs"
-' Start MiMo with CDP if not already running; Electron single-instance focuses existing.
-sh.Run "cmd /c start """" """ & exe & """ --remote-debugging-port=9222", 0, False
-WScript.Sleep 4000
-sh.Run """" & node & """ """ & boot & """ --launch", 0, False
+
+mimoExe = shell.ExpandEnvironmentStrings("%LOCALAPPDATA%") & "\Programs\Xiaomi MiMo\Xiaomi MiMo.exe"
+bootstrapScript = fso.GetParentFolderName(WScript.ScriptFullName) & "\bootstrap\bootstrap.mjs"
+nodeExe = "$node"
+debugPort = 9222
+mimoArgs = "--remote-debugging-port=" & debugPort
+
+If Not fso.FileExists(mimoExe) Then
+  mimoExe = "C:\Program Files\Xiaomi MiMo\Xiaomi MiMo.exe"
+End If
+
+If Not fso.FileExists(mimoExe) Then
+  MsgBox "Xiaomi MiMo.exe not found.", 16, "Xiaomi MiMo"
+  WScript.Quit 1
+End If
+
+alreadyRunning = False
+On Error Resume Next
+Set wmi = GetObject("winmgmts:\\.\root\cimv2")
+Set procs = wmi.ExecQuery("SELECT Name FROM Win32_Process WHERE Name = 'Xiaomi MiMo.exe'")
+If Err.Number = 0 Then
+  For Each p In procs
+    alreadyRunning = True
+    Exit For
+  Next
+End If
+On Error GoTo 0
+
+If Not alreadyRunning Then
+  shell.Run Chr(34) & mimoExe & Chr(34) & " " & mimoArgs, 1, False
+End If
+
+If fso.FileExists(bootstrapScript) Then
+  shell.Run Chr(34) & nodeExe & Chr(34) & " " & Chr(34) & bootstrapScript & Chr(34), 0, False
+End If
 "@
 Set-Content -Path $wrapper -Value $wrapperBody -Encoding ASCII
 
@@ -113,29 +149,24 @@ if (-not (Test-Cdp)) {
 }
 
 if ($node -and (Test-Path $boot)) {
-  & $node $boot --launch
+  & $node $boot
   exit $LASTEXITCODE
 }
 exit 1
 '@
 Set-Content -Path $ensurePs1 -Value $ensureBody -Encoding UTF8
 
-# VBS silent bootstrap for logon
-$vbs = Join-Path $installRoot 'start-bootstrap.vbs'
-$vbsBody = @"
-Set sh = CreateObject("WScript.Shell")
-sh.Run """$node"" ""$bootstrap"" --watch", 0, False
-"@
-Set-Content -Path $vbs -Value $vbsBody -Encoding ASCII
-
+# VBS silent bootstrap for logon — REMOVED in 2.3.0.
+# CTS no longer registers HKCU Run. Login starts nothing.
+# Remove any legacy login entry from older installs.
 $runValue = "wscript.exe `"$vbs`""
 $regPath = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Run'
 $existing = (Get-ItemProperty -Path $regPath -Name $RunName -ErrorAction SilentlyContinue).$RunName
-if ($existing -eq $runValue) {
-  Write-Step $true "Persistence already registered (idempotent)"
+if ($existing) {
+  Remove-ItemProperty -Path $regPath -Name $RunName -Force -ErrorAction SilentlyContinue
+  Write-Step $true "Removed legacy login autostart (HKCU Run: $RunName)"
 } else {
-  New-ItemProperty -Path $regPath -Name $RunName -Value $runValue -PropertyType String -Force | Out-Null
-  Write-Step $true "Persistence registered (HKCU Run: $RunName)"
+  Write-Step $true "No login autostart (HKCU Run: $RunName absent)"
 }
 
 # --- discover + backup existing Xiaomi MiMo shortcuts, then rewrite ---
@@ -249,41 +280,23 @@ $cfg = @{
   mimoExe     = $mimoExe
   repoRoot    = $repoRoot
   runName     = $RunName
-  mode        = 'zero-friction-shortcut-wrapper'
+  mode        = 'wrapper-one-shot-bootstrap'
 } | ConvertTo-Json
 Set-Content -Path (Join-Path $installRoot 'cts-config.json') -Value $cfg -Encoding UTF8
-
-# Start bootstrap watch (idempotent)
-$existingBs = Get-CimInstance Win32_Process -Filter "Name='node.exe'" -ErrorAction SilentlyContinue |
-  Where-Object { $_.CommandLine -like "*bootstrap.mjs*--watch*" }
-if ($existingBs) {
-  Write-Step $true "Bootstrap already running (pid $($existingBs.ProcessId))"
-} else {
-  Start-Process -FilePath 'wscript.exe' -ArgumentList "`"$vbs`"" -WindowStyle Hidden
-  Write-Step $true "Bootstrap started (watch)"
-}
-
-Start-Sleep -Seconds 2
-& $node $bootstrap --status
-$hc = $LASTEXITCODE
 
 Write-Host ""
 Write-Host "=== Install summary ===" -ForegroundColor Cyan
 Write-Host "  Version:     $Version"
-Write-Host "  Mode:        Zero-friction shortcut wrapper (original name + icon)"
+Write-Host "  Mode:        Wrapper one-shot bootstrap (no login autostart, no watcher)"
 Write-Host "  Install:     $installRoot"
-Write-Host "  Persistence: HKCU\$RunName"
-Write-Host "  User entry:  Desktop / Start Menu → 'Xiaomi MiMo' (rewritten)"
+Write-Host "  Persistence: none (HKCU Run not registered)"
+Write-Host "  User entry:  Desktop / Start Menu → 'Xiaomi MiMo' (rewritten to wrapper)"
 Write-Host "  Rollback:    $rollbackPath"
 Write-Host ""
 Write-Host "LIMITATION:" -ForegroundColor Yellow
 Write-Host "  Launching the raw Xiaomi MiMo.exe from its install folder still cannot get CDP"
 Write-Host "  without the --remote-debugging-port flag. Use the desktop/start 'Xiaomi MiMo' icon."
 Write-Host ""
-if ($hc -eq 0) {
-  Write-Host "  Health: PASS" -ForegroundColor Green
-} else {
-  Write-Host "  Health: pending — close MiMo fully, click 'Xiaomi MiMo', then installer\verify.ps1" -ForegroundColor Yellow
-}
+Write-Host "  After install: click 'Xiaomi MiMo' once to start MiMo + inject Token Status."
 Write-Host "Install: PASS" -ForegroundColor Green
 exit 0
